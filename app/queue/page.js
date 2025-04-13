@@ -44,6 +44,7 @@ export default function Queue() {
   const [selectedQueue, setSelectedQueue] = useState("");
   const [userQueues, setUserQueues] = useState([]);
   const [showQR, setShowQR] = useState(false);
+  const [token, setToken] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -135,6 +136,7 @@ export default function Queue() {
       setQRCodeData(data.queue.qrCode);
       setShowForm(false);
       setShowQR(true);
+      setToken(data.queue.token);
     } catch (err) {
       console.error('Queue creation error:', err);
       setError(err.message || "An error occurred while creating the queue");
@@ -322,11 +324,15 @@ export default function Queue() {
               <p className="text-gray-400 text-center mb-4">
                 Scan this QR code to join your queue
               </p>
+              <p className="text-gray-400 text-center mb-4">
+                Your Token: {token}
+              </p>
               <button
                 onClick={() => {
                   setShowQR(false);
                   setShowForm(true);
                   setQRCodeData("");
+                  setToken("");
                 }}
                 className="w-full bg-blue-500 text-white rounded-lg py-3 px-6 hover:bg-blue-600 transition-all"
               >

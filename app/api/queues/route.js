@@ -13,17 +13,32 @@ export async function POST(request) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
     }
 
-    const qrCodeData = `queue://${uuidv4()}`;
+    // Generate token for queue owner
+    const token = uuidv4();
 
+    // Generate QR code data using a temporary ID
+    const tempId = uuidv4();
+    const qrCodeData = `http://localhost:3000/join/${tempId}`;
+
+    // Create a new queue object with all required fields
     const newQueue = new Queue({
       name,
       organization,
       queueSize: parseInt(queueSize),
       expiryDate: new Date(expiryDate),
       description,
+      token,
       qrCode: qrCodeData,
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
 
+    // Save the queue first to get the actual MongoDB ID
+    await newQueue.save();
+
+    // Update the QR code with the actual MongoDB ID
+    const finalQrCodeData = `http://localhost:3000/join/${newQueue._id}`;
+    newQueue.qrCode = finalQrCodeData;
     await newQueue.save();
 
     return NextResponse.json({
@@ -35,6 +50,7 @@ export async function POST(request) {
         expiryDate: newQueue.expiryDate.toISOString(),
         description: newQueue.description,
         qrCode: newQueue.qrCode,
+        token: newQueue.token,
         createdAt: newQueue.createdAt.toISOString(),
         updatedAt: newQueue.updatedAt.toISOString(),
       },
@@ -60,6 +76,7 @@ export async function GET() {
       expiryDate: queue.expiryDate.toISOString(),
       description: queue.description,
       qrCode: queue.qrCode,
+      token: queue.token,
       createdAt: queue.createdAt.toISOString(),
       updatedAt: queue.updatedAt.toISOString(),
     }));
