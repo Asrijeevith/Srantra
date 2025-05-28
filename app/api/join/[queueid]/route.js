@@ -5,6 +5,25 @@ import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
 
 export async function GET(request, { params }) {
+  // Handle CORS preflight requests
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
+  }
   try {
     // Connect to MongoDB
     await connectToMongo();
@@ -15,11 +34,19 @@ export async function GET(request, { params }) {
     // Find the queue by ID
     const queue = await Queue.findById(new ObjectId(queueid));
     if (!queue) {
-      return NextResponse.json({ error: 'Queue not found' }, { status: 404 });
+      return new NextResponse(JSON.stringify({ error: 'Queue not found' }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
     }
 
     // Return the queue data
-    return NextResponse.json({
+    return new NextResponse(JSON.stringify({
       queue: {
         id: queueid,
         name: queue.name,
@@ -28,14 +55,56 @@ export async function GET(request, { params }) {
         queueSize: queue.queueSize,
         expiryDate: queue.expiryDate
       }
+    }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
     });
   } catch (error) {
     console.error('Error fetching queue:', error);
-    return NextResponse.json({ error: 'Failed to fetch queue' }, { status: 500 });
+    return new NextResponse(JSON.stringify({ error: 'Failed to fetch queue' }), { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
   }
 }
 
 export async function POST(request, { params }) {
+  // Handle CORS preflight requests
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
+  }
   try {
     // Connect to MongoDB
     await connectToMongo();
@@ -46,7 +115,15 @@ export async function POST(request, { params }) {
     // Find the queue by ID
     const queue = await Queue.findById(new ObjectId(queueid));
     if (!queue) {
-      return NextResponse.json({ error: 'Queue not found' }, { status: 404 });
+      return new NextResponse(JSON.stringify({ error: 'Queue not found' }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
     }
 
     // Generate token for the user joining the queue
@@ -66,9 +143,38 @@ export async function POST(request, { params }) {
     await queue.save();
 
     // Return response with token
-    return NextResponse.json({ token });
+    return new NextResponse(JSON.stringify({ token }), {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
   } catch (error) {
     console.error('Error joining queue:', error);
-    return NextResponse.json({ error: 'Failed to join queue' }, { status: 500 });
+    return new NextResponse(JSON.stringify({ error: 'Failed to join queue' }), { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
   }
 }
