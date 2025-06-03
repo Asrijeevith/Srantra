@@ -43,7 +43,9 @@ export async function POST(request, { params }) {
     }
 
     // Check if queue is expired
-    if (new Date() > new Date(queue.expiryDate)) {
+    const now = new Date();
+    const queueExpiryDate = new Date(queue.expiryDate);
+    if (now.getTime() > queueExpiryDate.getTime()) {
       return NextResponse.json(
         { error: 'Queue has expired' },
         { 
@@ -144,7 +146,9 @@ export async function GET(request, { params }) {
     }
 
     // Check if queue is expired
-    if (new Date() > new Date(queue.expiryDate)) {
+    const now = new Date();
+    const queueExpiryDate = new Date(queue.expiryDate);
+    if (now.getTime() > queueExpiryDate.getTime()) {
       return NextResponse.json(
         { error: 'Queue has expired' },
         { 
