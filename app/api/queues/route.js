@@ -1,83 +1,149 @@
 import { NextResponse } from 'next/server';
-import { connectToMongo } from '../../../lib/mongodb';
-import Queue from '../../../lib/models/Queue';
-import { v4 as uuidv4 } from 'uuid';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/route';
+import { connectToMongo } from '@/lib/mongodb';
+import Queue from '@/lib/models/Queue';
 
-export async function POST(request) {
+// GET /api/queues - Get all queues for the authenticated user
+export async function GET() {
   try {
-    await connectToMongo();
+    const session = await getServerSession(authOptions);
 
-    const { name, organization, queueSize, expiryDate, description } = await request.json();
-
-    if (!name || !organization || !queueSize || !expiryDate || !description) {
-      return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { 
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
     }
 
-    // Generate token for queue owner
-    const token = uuidv4();
+    await connectToMongo();
 
-    // Create a new queue object with all required fields
-    const newQueue = new Queue({
-      name,
-      organization,
-      queueSize: parseInt(queueSize),
-      expiryDate: new Date(expiryDate),
-      description,
-      token,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
+    const queues = await Queue.find({ userId: session.user.id })
+      .sort({ createdAt: -1 });
 
-    // Generate QR code URL using the app domain
-    const qrCodeDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || 'http://192.168.29.135:3000';
-    newQueue.qrCode = `${qrCodeDomain}/join/${newQueue._id}`;
-
-    // Save the queue with the QR code already set
-    await newQueue.save();
-
-    return NextResponse.json({
-      queue: {
-        id: newQueue._id.toString(),
-        name: newQueue.name,
-        organization: newQueue.organization,
-        queueSize: newQueue.queueSize,
-        expiryDate: newQueue.expiryDate.toISOString(),
-        description: newQueue.description,
-        qrCode: newQueue.qrCode,
-        token: newQueue.token,
-        createdAt: newQueue.createdAt.toISOString(),
-        updatedAt: newQueue.updatedAt.toISOString(),
-      },
-    });
+    return NextResponse.json(
+      { queues },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
+    );
   } catch (error) {
-    console.error('Error in POST:', error);
-    return NextResponse.json({ error: error.message || 'Failed to create queue' }, { status: 500 });
+    console.error('Error fetching queues:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch queues' },
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
+    );
   }
 }
 
-export async function GET() {
+// POST /api/queues - Create a new queue
+export async function POST(request) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { 
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+    }
+
+    const body = await request.json();
+    const { name, organization, queueSize, expiryDate, description } = body;
+
+    // Validate required fields
+    if (!name || !organization || !queueSize || !expiryDate || !description) {
+      return NextResponse.json(
+        { error: 'All fields are required' },
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+    }
+
+    // Validate queue size
+    if (isNaN(queueSize) || parseInt(queueSize) < 1) {
+      return NextResponse.json(
+        { error: 'Queue size must be a positive number' },
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+    }
+
+    // Validate expiry date
+    const expiryDateObj = new Date(expiryDate);
+    if (isNaN(expiryDateObj.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid expiry date' },
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+    }
+
     await connectToMongo();
 
-    const queues = await Queue.find().sort({ createdAt: -1 });
-    
-    // Convert MongoDB documents to plain objects
-    const plainQueues = queues.map(queue => ({
-      id: queue._id.toString(),
-      name: queue.name,
-      organization: queue.organization,
-      queueSize: queue.queueSize,
-      expiryDate: queue.expiryDate.toISOString(),
-      description: queue.description,
-      qrCode: queue.qrCode,
-      token: queue.token,
-      createdAt: queue.createdAt.toISOString(),
-      updatedAt: queue.updatedAt.toISOString(),
-    }));
+    // Generate a unique token for the queue
+    const token = Math.random().toString(36).substring(2, 15) + 
+                 Math.random().toString(36).substring(2, 15);
 
-    return NextResponse.json({ queues: plainQueues });
+    const queue = await Queue.create({
+      name,
+      organization,
+      queueSize: parseInt(queueSize),
+      expiryDate: expiryDateObj,
+      description,
+      token,
+      userId: session.user.id,
+      qrCode: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/join/${token}`,
+      participants: []
+    });
+
+    return NextResponse.json(
+      { queue },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
+    );
   } catch (error) {
-    console.error('Error in GET:', error);
-    return NextResponse.json({ error: error.message || 'Failed to fetch queues' }, { status: 500 });
+    console.error('Error creating queue:', error);
+    return NextResponse.json(
+      { error: 'Failed to create queue' },
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
+    );
   }
 }

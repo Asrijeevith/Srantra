@@ -2,26 +2,28 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import TwitterProvider from "next-auth/providers/twitter";
 
-const handler = NextAuth({
+export const authOptions = {
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: process.env.GOOGLE_ID,
+      clientSecret: process.env.GOOGLE_SECRET,
     }),
     TwitterProvider({
-      clientId: process.env.TWITTER_CLIENT_ID,
-      clientSecret: process.env.TWITTER_CLIENT_SECRET,
-      version: "2.0", // Needed for X (Twitter)
+      clientId: process.env.TWITTER_ID,
+      clientSecret: process.env.TWITTER_SECRET,
+      version: "2.0",
     }),
   ],
-  pages: {
-    signIn: "/login", // Custom login page
-  },
   callbacks: {
-    async redirect({ url, baseUrl }) {
-      return baseUrl; // always redirect to home after login
+    async session({ session, token, user }) {
+      if (session?.user) {
+        session.user.id = token.sub;
+      }
+      return session;
     },
   },
-});
+  debug: true,
+};
 
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
