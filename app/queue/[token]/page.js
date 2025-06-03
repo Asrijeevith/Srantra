@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { FiUsers, FiCalendar, FiClock, FiTrash2, FiEdit, FiCopy } from 'react-icons/fi';
+import { FiUsers, FiCalendar, FiClock, FiTrash2, FiEdit, FiCopy, FiCheck, FiArrowRight } from 'react-icons/fi';
 import QRCode from 'react-qr-code';
 import Navbar from '@/components/Navbar';
 
@@ -82,6 +82,31 @@ export default function QueueDetails({ params }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleParticipantAction = async (participantId, action) => {
+    try {
+      const response = await fetch(`/api/queues/${params.token}/participants`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action,
+          participantId
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update participant');
+      }
+
+      const data = await response.json();
+      setQueue(data.queue);
+    } catch (error) {
+      console.error('Error updating participant:', error);
+      setError(error.message);
+    }
+  };
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
@@ -128,100 +153,157 @@ export default function QueueDetails({ params }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <Navbar />
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-white">{queue.name}</h1>
-            <div className="flex gap-3">
-              <button
-                onClick={() => router.push(`/queue/${queue.token}/edit`)}
-                className="bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 rounded-xl px-4 py-2 transition-colors flex items-center gap-2"
-              >
-                <FiEdit className="w-4 h-4" />
-                Edit
-              </button>
-              <button
-                onClick={handleDeleteQueue}
-                className="bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl px-4 py-2 transition-colors flex items-center gap-2"
-              >
-                <FiTrash2 className="w-4 h-4" />
-                Delete
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-6">
-              <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/30">
-                <h2 className="text-xl font-bold text-white mb-4">Queue Information</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 text-slate-300">
-                    <FiUsers className="w-5 h-5 text-indigo-400" />
-                    <span>Size: {queue.participants.length}/{queue.queueSize}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-slate-300">
-                    <FiCalendar className="w-5 h-5 text-purple-400" />
-                    <span>Expires: {new Date(queue.expiryDate).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-slate-300">
-                    <FiClock className="w-5 h-5 text-blue-400" />
-                    <span>Created: {new Date(queue.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
+      <div className="fixed top-0 left-0 right-0 z-[100]">
+        <Navbar />
+      </div>
+      
+      <div className="relative z-10 pt-28">
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <h1 className="text-3xl font-bold text-white">{queue.name}</h1>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => router.push(`/queue/${queue.token}/edit`)}
+                  className="bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 rounded-xl px-4 py-2 transition-colors flex items-center gap-2"
+                >
+                  <FiEdit className="w-4 h-4" />
+                  Edit
+                </button>
+                <button
+                  onClick={handleDeleteQueue}
+                  className="bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl px-4 py-2 transition-colors flex items-center gap-2"
+                >
+                  <FiTrash2 className="w-4 h-4" />
+                  Delete
+                </button>
               </div>
+            </div>
 
-              <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/30">
-                <h2 className="text-xl font-bold text-white mb-4">Share Queue</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 bg-slate-800/50 rounded-xl px-4 py-2 text-white font-mono text-sm truncate">
-                      {joinUrl}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/30">
+                  <h2 className="text-xl font-bold text-white mb-4">Queue Information</h2>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 text-slate-300">
+                      <FiUsers className="w-5 h-5 text-indigo-400" />
+                      <span>Size: {queue.participants.length}/{queue.queueSize}</span>
                     </div>
-                    <button
-                      onClick={() => copyToClipboard(joinUrl)}
-                      className="p-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 transition-colors"
-                    >
-                      <FiCopy className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-3 text-slate-300">
+                      <FiCalendar className="w-5 h-5 text-purple-400" />
+                      <span>Expires: {new Date(queue.expiryDate).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-slate-300">
+                      <FiClock className="w-5 h-5 text-blue-400" />
+                      <span>Created: {new Date(queue.createdAt).toLocaleDateString()}</span>
+                    </div>
                   </div>
-                  {copied && (
-                    <p className="text-green-400 text-sm">Copied to clipboard!</p>
-                  )}
                 </div>
-              </div>
-            </div>
 
-            <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/30">
-              <h2 className="text-xl font-bold text-white mb-4">QR Code</h2>
-              <div className="flex justify-center">
-                <div className="bg-white p-4 rounded-xl">
-                  <QRCode value={joinUrl} size={200} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/30">
-            <h2 className="text-xl font-bold text-white mb-4">Participants</h2>
-            {queue.participants.length === 0 ? (
-              <p className="text-slate-400">No participants yet</p>
-            ) : (
-              <div className="space-y-3">
-                {queue.participants.map((participant, index) => (
-                  <div
-                    key={participant.phone}
-                    className="flex items-center justify-between bg-slate-800/50 rounded-xl px-4 py-3"
-                  >
+                <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/30">
+                  <h2 className="text-xl font-bold text-white mb-4">Share Queue</h2>
+                  <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <span className="text-indigo-400 font-medium">#{index + 1}</span>
-                      <span className="text-white">{participant.name}</span>
+                      <div className="flex-1 bg-slate-800/50 rounded-xl px-4 py-2 text-white font-mono text-sm truncate">
+                        {joinUrl}
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(joinUrl)}
+                        className="p-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 transition-colors"
+                      >
+                        <FiCopy className="w-5 h-5" />
+                      </button>
                     </div>
-                    <span className="text-slate-400">{participant.phone}</span>
+                    {copied && (
+                      <p className="text-green-400 text-sm">Copied to clipboard!</p>
+                    )}
                   </div>
-                ))}
+                </div>
               </div>
-            )}
+
+              <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/30">
+                <h2 className="text-xl font-bold text-white mb-4">QR Code</h2>
+                <div className="flex justify-center">
+                  <div className="bg-white p-4 rounded-xl">
+                    <QRCode value={joinUrl} size={200} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/30">
+              <h2 className="text-xl font-bold text-white mb-4">Participants</h2>
+              {queue.participants.length === 0 ? (
+                <p className="text-slate-400">No participants yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {queue.participants.map((participant, index) => (
+                    <div
+                      key={participant._id}
+                      className={`flex items-center justify-between bg-slate-800/50 rounded-xl px-4 py-3 ${
+                        participant.status === 'current' ? 'border-2 border-indigo-500' :
+                        participant.status === 'skipped' ? 'border-2 border-yellow-500' :
+                        participant.status === 'served' ? 'border-2 border-green-500' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`font-medium ${
+                          participant.status === 'current' ? 'text-indigo-400' :
+                          participant.status === 'skipped' ? 'text-yellow-400' :
+                          participant.status === 'served' ? 'text-green-400' :
+                          'text-slate-400'
+                        }`}>#{index + 1}</span>
+                        <div>
+                          <span className="text-white">{participant.name}</span>
+                          <p className="text-sm text-slate-400">{participant.phone}</p>
+                          {participant.status === 'served' && participant.servedAt && (
+                            <p className="text-xs text-green-400">
+                              Served at {new Date(participant.servedAt).toLocaleTimeString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {participant.status === 'waiting' && (
+                          <>
+                            <button
+                              onClick={() => handleParticipantAction(participant._id, 'current')}
+                              className="p-2 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 transition-colors"
+                              title="Mark as current"
+                            >
+                              <FiCheck className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleParticipantAction(participant._id, 'skip')}
+                              className="p-2 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 transition-colors"
+                              title="Skip"
+                            >
+                              <FiArrowRight className="w-5 h-5" />
+                            </button>
+                          </>
+                        )}
+                        {participant.status === 'current' && (
+                          <button
+                            onClick={() => handleParticipantAction(participant._id, 'served')}
+                            className="p-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-colors"
+                            title="Mark as served"
+                          >
+                            <FiCheck className="w-5 h-5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleParticipantAction(participant._id, 'remove')}
+                          className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors"
+                          title="Remove"
+                        >
+                          <FiTrash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

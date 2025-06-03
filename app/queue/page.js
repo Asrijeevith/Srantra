@@ -276,7 +276,7 @@ export default function Queue() {
       </div>
       
       {/* Main content with proper spacing for fixed navbar */}
-      <div className="relative z-10 pt-20">
+      <div className="relative z-10 pt-24">
         <div className="container mx-auto px-4 py-12">
           <AnimatePresence mode="wait">
             {error && (
@@ -294,53 +294,39 @@ export default function Queue() {
             {showForm && (
               <motion.div
                 key="queue-form-container"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
                 className="flex flex-col lg:flex-row gap-12 items-center justify-center"
               >
                 {/* Feature Cards */}
-                <motion.div 
+                <motion.div
                   ref={featuresRef}
-                  className="hidden lg:block w-full max-w-md"
-                  initial={{ opacity: 0, x: -50 }}
-                  animate={isInView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ duration: 0.8 }}
+                  initial="hidden"
+                  animate={isInView ? "visible" : "hidden"}
+                  variants={containerVariants}
+                  className="hidden lg:flex flex-col gap-6 w-full max-w-md"
                 >
-                  <motion.div 
-                    className="mb-8"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-4">
-                      Queue Management
-                    </h2>
-                    <p className="text-slate-300 text-lg">
-                      Create and manage virtual queues with our advanced system
-                    </p>
-                  </motion.div>
-                  
-                  <motion.div 
-                    className="space-y-4"
-                    variants={containerVariants}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true }}
-                  >
-                    {features.map((feature, index) => (
-                      <FeatureCard 
-                        key={index}
-                        icon={feature.icon}
-                        title={feature.title}
-                        description={feature.description}
-                        delay={index * 0.1}
-                      />
-                    ))}
-                  </motion.div>
+                  {features.map((feature, index) => (
+                    <motion.div
+                      key={index}
+                      variants={itemVariants}
+                      custom={index}
+                      className="bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                          <feature.icon className="w-6 h-6 text-indigo-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
+                          <p className="text-slate-400">{feature.description}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
                 </motion.div>
 
-                {/* Form Section */}
                 <motion.form
                   key="queue-form"
                   onSubmit={(e) => {
@@ -413,23 +399,21 @@ export default function Queue() {
                       <motion.div
                         key={field.label}
                         variants={itemVariants}
-                        custom={index * 0.1}
+                        custom={index}
                         className="space-y-2"
                       >
                         <label className="block text-sm font-medium text-slate-300">
                           {field.label}
                         </label>
-                        <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                          <input
-                            type={field.type}
-                            value={field.value}
-                            onChange={(e) => field.onChange(e.target.value)}
-                            placeholder={field.placeholder}
-                            min={field.min}
-                            className="w-full bg-slate-700/50 border border-slate-600/30 rounded-xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-lg"
-                            required
-                          />
-                        </motion.div>
+                        <input
+                          type={field.type}
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          placeholder={field.placeholder}
+                          min={field.min}
+                          className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent text-white placeholder-slate-500 transition-all duration-300"
+                          required
+                        />
                       </motion.div>
                     ))}
 
@@ -446,7 +430,7 @@ export default function Queue() {
                           value={description}
                           onChange={(e) => setDescription(e.target.value)}
                           placeholder="Enter queue description"
-                          className="w-full bg-slate-700/50 border border-slate-600/30 rounded-xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-lg min-h-[120px]"
+                          className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent transition-all duration-300 min-h-[120px]"
                           required
                         />
                       </motion.div>
@@ -485,71 +469,73 @@ export default function Queue() {
             )}
             
             {/* Confirmation Modal */}
-            {showConfirmation && (
-              <motion.div
-                key="confirmation-dialog"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50 p-4"
-              >
+            <AnimatePresence>
+              {showConfirmation && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="relative bg-slate-800 rounded-2xl p-8 w-full max-w-md border border-slate-700/50 shadow-2xl"
+                  key="confirmation-dialog"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50 p-4"
                 >
-                  <button
-                    onClick={handleNo}
-                    className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    className="relative bg-slate-800 rounded-2xl p-8 w-full max-w-md border border-slate-700/50 shadow-2xl"
                   >
-                    <FiX className="w-6 h-6" />
-                  </button>
-                  
-                  <div className="text-center">
-                    <motion.div
-                      className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-6"
-                      animate={{
-                        scale: [1, 1.1, 1],
-                        rotate: [0, 5, -5, 0],
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        ease: "easeInOut",
-                        repeat: Infinity,
-                        repeatType: "reverse"
-                      }}
+                    <button
+                      onClick={handleNo}
+                      className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
                     >
-                      <FiInfo className="w-10 h-10 text-indigo-400" />
-                    </motion.div>
+                      <FiX className="w-6 h-6" />
+                    </button>
                     
-                    <h2 className="text-2xl font-bold text-white mb-3">Confirm Creation</h2>
-                    <p className="text-slate-300 mb-6">Are you sure you want to create this queue?</p>
-                    
-                    <div className="flex justify-center gap-4">
-                      <motion.button
-                        onClick={handleNo}
-                        className="px-6 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white transition-colors"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                    <div className="text-center">
+                      <motion.div
+                        className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-6"
+                        animate={{
+                          scale: [1, 1.1, 1],
+                          rotate: [0, 5, -5, 0],
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          ease: "easeInOut",
+                          repeat: Infinity,
+                          repeatType: "reverse"
+                        }}
                       >
-                        Cancel
-                      </motion.button>
-                      <motion.button
-                        onClick={handleYes}
-                        className="px-6 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/20 transition-all"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        Confirm
-                      </motion.button>
+                        <FiInfo className="w-10 h-10 text-indigo-400" />
+                      </motion.div>
+                      
+                      <h2 className="text-2xl font-bold text-white mb-3">Confirm Creation</h2>
+                      <p className="text-slate-300 mb-6">Are you sure you want to create this queue?</p>
+                      
+                      <div className="flex justify-center gap-4">
+                        <motion.button
+                          onClick={handleNo}
+                          className="px-6 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white transition-colors"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          Cancel
+                        </motion.button>
+                        <motion.button
+                          onClick={handleYes}
+                          className="px-6 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/20 transition-all"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          Confirm
+                        </motion.button>
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
                 </motion.div>
-              </motion.div>
-            )}
+              )}
+            </AnimatePresence>
             
             {/* QR Code Display */}
             {showQR && (

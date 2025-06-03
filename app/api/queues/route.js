@@ -122,7 +122,7 @@ export async function POST(request) {
       description,
       token,
       userId: session.user.id,
-      qrCode: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/join/${token}`,
+      qrCode: `${process.env.NEXT_PUBLIC_APP_URL || 'http://192.168.29.135:3000'}/join/${token}`,
       participants: []
     });
 
