@@ -173,6 +173,24 @@ export async function GET(request, { params }) {
       );
     }
 
+    // Get the phone number from the request query parameters
+    const { searchParams } = new URL(request.url);
+    const phone = searchParams.get('phone');
+
+    let isInQueue = false;
+    let position = null;
+    let estimatedWaitTime = null;
+
+    // If phone number is provided, check if user is already in queue
+    if (phone) {
+      const existingParticipant = queue.participants.find(p => p.phone === phone);
+      if (existingParticipant) {
+        isInQueue = true;
+        position = existingParticipant.position;
+        estimatedWaitTime = calculateEstimatedWaitTime(position);
+      }
+    }
+
     return NextResponse.json(
       { 
         queue: {
@@ -182,7 +200,10 @@ export async function GET(request, { params }) {
           queueSize: queue.queueSize,
           currentSize: queue.participants.length,
           expiryDate: queue.expiryDate
-        }
+        },
+        isInQueue,
+        position,
+        estimatedWaitTime
       },
       {
         headers: {

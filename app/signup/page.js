@@ -5,16 +5,84 @@ import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
 import { FaXTwitter } from "react-icons/fa6";
 import { signIn, useSession } from "next-auth/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { FiMail } from 'react-icons/fi';
 
 export default function SignupPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: ''
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     if (session) router.push("/");
   }, [session]);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      // Create user with Firebase
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      
+      // Send verification email
+      await sendEmailVerification(userCredential.user);
+      setVerificationSent(true);
+      setUser(userCredential.user);
+      
+      // Create user in your database
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Something went wrong');
+      }
+
+      setError('Please check your email for verification link. After verifying, you can login.');
+    } catch (error) {
+      console.error('Error:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!user) return;
+    
+    try {
+      await sendEmailVerification(user);
+      setError('Verification email sent again. Please check your inbox.');
+    } catch (error) {
+      setError('Error sending verification email. Please try again.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
@@ -26,14 +94,76 @@ export default function SignupPage() {
       >
         <h2 className="text-3xl font-bold text-white text-center mb-6">Sign Up</h2>
         
-        <form className="space-y-5">
-          <input type="text" placeholder="Name" className="w-full px-4 py-3 rounded-lg bg-gray-800 text-white" />
-          <input type="email" placeholder="Email" className="w-full px-4 py-3 rounded-lg bg-gray-800 text-white" />
-          <input type="password" placeholder="Password" className="w-full px-4 py-3 rounded-lg bg-gray-800 text-white" />
-          <motion.button whileHover={{ scale: 1.03 }} className="w-full py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition">
-            Sign Up
-          </motion.button>
-        </form>
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
+
+        {verificationSent ? (
+          <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <FiMail className="w-6 h-6 text-indigo-400" />
+              <h2 className="text-xl font-semibold text-indigo-400">Verify Your Email</h2>
+            </div>
+            <p className="text-slate-300 mb-4">
+              We've sent a verification email to {formData.email}. Please check your inbox and click the verification link to continue.
+            </p>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleResendVerification}
+                className="text-indigo-400 hover:text-indigo-300 text-sm"
+              >
+                Resend verification email
+              </button>
+              <button
+                onClick={() => setVerificationSent(false)}
+                className="text-slate-400 hover:text-slate-300 text-sm"
+              >
+                Back to form
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <input
+              type="text"
+              name="name"
+              placeholder="Name"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-lg bg-gray-800 text-white"
+              required
+            />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-lg bg-gray-800 text-white"
+              required
+            />
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-lg bg-gray-800 text-white"
+              required
+              minLength={6}
+            />
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              className="w-full py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? 'Signing up...' : 'Sign Up'}
+            </motion.button>
+          </form>
+        )}
 
         <p className="text-center text-gray-400 mt-4">
           Already have an account? <Link href="/login" className="text-blue-400 hover:underline">Login</Link>
