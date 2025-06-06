@@ -8,13 +8,19 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "QueueFlow",
+  title: "Srantra",
   description: "A smart digital queue system",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+      </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>{children}</Providers>
       </body>

@@ -4,25 +4,26 @@ import Navbar from "@/components/Navbar";
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import { Mail, Phone, MapPin, Clock, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
+import { FaGithub, FaLinkedin, FaTwitter, FaInstagram } from 'react-icons/fa';
 
 const contactInfo = [
   {
     icon: <Mail className="w-6 h-6" />,
     title: "Email Us",
-    value: "hello@queueflow.com",
-    link: "mailto:hello@queueflow.com"
+    value: "support@srantra.com",
+    link: "mailto:support@srantra.com"
   },
   {
     icon: <Phone className="w-6 h-6" />,
     title: "Call Us",
-    value: "+1 (555) 123-4567",
-    link: "tel:+15551234567"
+    value: "+91 8317614534",
+    link: "tel:+918317614534"
   },
   {
     icon: <MapPin className="w-6 h-6" />,
     title: "Visit Us",
-    value: "123 Queue Street, San Francisco, CA 94103",
-    link: "https://maps.google.com"
+    value: "Gmr Institute of Technology,Rajam",
+    link: "https://maps.app.goo.gl/BR3Xepri8VP83DWK7"
   },
   {
     icon: <Clock className="w-6 h-6" />,
@@ -87,6 +88,20 @@ export default function ContactPage() {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Save data to MongoDB
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save data');
+      }
+
       setSubmitStatus('success');
       setFormData({
         name: '',
@@ -274,15 +289,19 @@ export default function ContactPage() {
               >
                 <h3 className="text-lg font-semibold text-white mb-2">Connect With Us</h3>
                 <p className="text-gray-400 mb-5 text-sm">Follow us on social media for the latest updates and news.</p>
-                <div className="flex space-x-3">
-                  {['Twitter', 'LinkedIn', 'Facebook', 'Instagram'].map((social) => (
+                <div className="flex items-center justify-left mt-4 space-x-6">
+                  {[
+                    { icon: <FaGithub className="w-6 h-6" />, href: "https://github.com/Asrijeevith" },
+                    { icon: <FaLinkedin className="w-6 h-6" />, href: "https://linkedin.com/in/srijeevith2288/" },
+                  ].map((social) => (
                     <a
-                      key={social}
-                      href="#"
-                      className="h-9 w-9 rounded-full bg-gray-800/60 hover:bg-gray-700/60 flex items-center justify-center text-gray-300 hover:text-white transition-all duration-200 backdrop-blur-sm border border-gray-700/50"
-                      aria-label={social}
+                      key={social.href}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-white transition-colors"
                     >
-                      <span className="sr-only">{social}</span>
+                      {social.icon}
                     </a>
                   ))}
                 </div>
@@ -792,7 +811,7 @@ export default function ContactPage() {
                         <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       </motion.a>
                       <motion.a
-                        href="/features"
+                        href="/#features"
                         className="px-8 py-5 bg-white/5 hover:bg-white/10 text-white font-medium text-lg rounded-xl border border-white/10 hover:border-white/20 transition-all duration-300 flex items-center justify-center group backdrop-blur-sm"
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ 
@@ -833,7 +852,7 @@ export default function ContactPage() {
                       }}
                       viewport={{ once: true }}
                     >
-                      No credit card required • Cancel anytime • 24/7 support
+                      No credit card required • 24/7 support
               </motion.p>
             </div>
           </div>
